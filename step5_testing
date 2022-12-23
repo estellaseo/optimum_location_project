@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# 데이터 로딩 필요! 
+
+# =============================================================================
+# [ 카이제곱 독립성 검정 ] CCTV수, 교차로수, 주차면수, N버스_노선개수, 지하철역수 
+# =============================================================================
+
+# 1. 필요한 데이터 형식으로 변환 
+# (1) CCTV수
+df_chi_CCTV수 = df_modeling[['CCTV수','음주사고수']].groupby(['CCTV수','음주사고수'])['음주사고수'].count().unstack().fillna(0).reset_index()
+
+# (2) 교차로수
+df_chi_교차로수 = df_modeling[['교차로수','음주사고수']].groupby(['교차로수','음주사고수'])['음주사고수'].count().unstack().fillna(0).reset_index()
+
+# (3) 주차면수
+df_chi_주차면수 = df_modeling[['주차면수','음주사고수']].groupby(['주차면수','음주사고수'])['음주사고수'].count().unstack().fillna(0).reset_index()
+
+# (4) N버스_노선개수
+df_chi_N버스_노선개수 = df_modeling[['N버스_노선개수','음주사고수']].groupby(['N버스_노선개수','음주사고수'])['음주사고수'].count().unstack().fillna(0).reset_index()
+
+# (5) 지하철역수
+df_chi_지하철역수 = df_modeling[['지하철역수','음주사고수']].groupby(['지하철역수','음주사고수'])['음주사고수'].count().unstack().fillna(0).reset_index()
+
+
+# 필요한 데이터 형식 : 아래와 같음!!! 
+      음주사고수 1 2 3 4 5
+cctv수
+0 
+1
+2
+3
+4
+
+
+# 2. 함수 생성 
+from scipy import stats
+def chi_test(data) :
+    pvalue = stats.chi2_contingency(data)[1]
+    print('p-value : %.20f' %pvalue)
+
+    if pvalue < 0.05 :
+        print("신뢰수준하에서 유의한 관계. 대립가설 채택")
+    else :
+        print("신뢰수준하에서 무의미한 관계. 귀무가설 채택")
+
+# [ 부가 설명 ]
+# H0 : 독립변수는 종속변수와 상호 독립적이다
+# H1 : 독립변수는 종속변수와 독립적이지 않다
+# -> 검정통계량(p-value)이 0.05 이하로 나와야 영가설 기각, 대립가설(H1) 채택
+#    즉, 독립변수가 달라지면 종속변수도 달라지니 우리가 설정한 요인이 종속변수에 확실히 영향을 미치는구나를 확인 가능 
+
+
+# 3. 적용 (결과 리턴) 
+chi_test(df_chi_cctv수)
+chi_test(df_chi_교차로수)
+chi_test(df_chi_주차면수)
+chi_test(df_chi_N버스_노선개수)
+chi_test(df_chi_지하철역수)
+
+# => 모두 유의미하다고 나옴! 대립가설 채택 !! 
+
+
+
+
+# =============================================================================
+# f1 score
+# =============================================================================
+# 불균등한 클래스 분포 
+df_modeling['음주사고수'].value_counts()    # 불균등한 클래스 분포
+
+# 1    201
+# 2     28
+# 3     11
+# 4      3
+# 5      2
+
+# 불균등한 클래스로 이루어진 데이터 이기에 => 성능지표로 f1 score 사용 
+# accuracy는 균등한 클래스 분포인 데이터에 사용하는게 좋음 
+
+
+from sklearn.metrics import f1_score
+
+# rf의 f1 score  : 가장 큼! 
+f1_rf = f1_score(df_modeling_y, m_rf.predict(df_modeling_x), average='weighted')
+round(f1_rf, 2)     # 0.79 
+
+# 아래는 돌리지 말 것!!! 
+# dt의 f1_score
+f1_dt = f1_score(df_modeling_y, m_dt.predict(df_modeling_x), average='weighted')
+round(f1_dt, 2)     # 0.76 
+
+# gbm의 f1_score
+f1_gbc = f1_score(df_modeling_y, m_gbc.predict(df_modeling_x), average='weighted')
+round(f1_gbc, 2)    # 0.74
+
+# xgb의 f1_score
+f1_xgb = f1_score(df_modeling_y, m_xgb.predict(df_modeling_x), average='weighted')
+print(round(f1_xgb,2))  # 0.74
+
+# lgbm의 f1_score 
+f1_lgb = f1_score(df_modeling_y, m_lgb.predict(df_modeling_x), average='weighted')
+print('LGBM Model f1_score : %.2f' %f1_lgb)   # 0.74
+
+# cb의 f1_score
+f1_cb = f1_score(df_modeling_y, m_cb.predict(df_modeling_x), average='weighted')
+print(round(f1_cb,2))   # 0.74
