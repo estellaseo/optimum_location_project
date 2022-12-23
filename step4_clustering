@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# =============================================================================
+# 군집분석 
+# =============================================================================
+
+from sklearn.cluster import KMeans
+# left, top 
+index1 = pd.read_csv('index_221109_rf_상위1프로좌표.csv')
+index2 = index1[['id','left','top']].set_index('id')            
+            
+
+
+# 최적 군집 개수 찾기 (elbow point 시각화) 
+sse = [] 
+for i in range(5,20) :
+    m_kmeans = KMeans(n_clusters=i, random_state=0)
+    m_kmeans.fit(index2)
+    sse.append(m_kmeans.inertia_)
+    
+plt.plot(range(5,20), sse, marker='o')
+plt.xlabel('클러스터 개수')
+plt.ylabel('SSE')
+plt.show()
+
+
+# 찾은 최적 군집수를 적용하여 KMeans 모델 돌리기 
+m_kmeans = KMeans(9)
+pre1 = m_kmeans.fit_predict(index2)
+
+
+# 군집 시각화 
+plt.scatter(index2['left'], index2['top'], c=pre1, s=40, edgecolors='k')
+plt.title('kmeans clustering')
+
+
+# index1 데이터에 '군집명' 컬럼 추가 
+index1['군집명'] = m_kmeans.labels_
+
+
+index1.to_csv('rf_상위1프로좌표_군집.csv', encoding='cp949')
+# rf_상위1프로좌표_군집.csv 파일을 qgis 로 돌려서 시각화 
